@@ -1,0 +1,145 @@
+USE [eventos]
+GO
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='grupo' and xtype='U')
+    BEGIN
+        CREATE TABLE [grupo] (
+            [Id] UNIQUEIDENTIFIER NOT NULL,
+            [Nome] VARCHAR(30),
+            CONSTRAINT [pk_grupo] PRIMARY KEY ([Id])
+        )
+    END
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='usuario' and xtype='U')
+    BEGIN
+        CREATE TABLE [usuario] (
+            [Id] UNIQUEIDENTIFIER NOT NULL,
+            [NomeCompleto] VARCHAR(80) NOT NULL,
+            [Email] VARCHAR(80),
+            [DataNascimento] DATE NOT NULL,
+            [Escolaridade] VARCHAR(50),
+            [Senha] VARCHAR(64),
+            CONSTRAINT [pk_usuario] PRIMARY KEY ([Id])
+        )
+    END
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='usuarioGrupo' and xtype='U')
+    BEGIN
+        CREATE TABLE [usuarioGrupo] (
+            [IdUsuario] UNIQUEIDENTIFIER NOT NULL,
+            [IdGrupo] UNIQUEIDENTIFIER NOT NULL
+        )
+    END
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='categoria' and xtype='U')
+    BEGIN
+        CREATE TABLE [categoria] (
+            [Id] UNIQUEIDENTIFIER NOT NULL,
+            [Nome] VARCHAR(30) NOT NULL,
+            [DataCriacao] DATETIME DEFAULT GETDATE(),
+            CONSTRAINT [pk_categoria] PRIMARY KEY ([Id])
+        )
+    END
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='evento' and xtype='U')
+    BEGIN
+        CREATE TABLE [evento] (
+            [Id] UNIQUEIDENTIFIER NOT NULL,
+            [Titulo] VARCHAR(80) NOT NULL,
+            [Descricao] VARCHAR(200),
+            [IdCategoria] UNIQUEIDENTIFIER NOT NULL,
+            [DataCriacao] DATETIME DEFAULT GETDATE(),
+            [DataEvento] DATETIME,
+            [IdOrganizador] UNIQUEIDENTIFIER NOT NULL,
+            [Certificado] BIT DEFAULT 0,
+            [Link] VARCHAR(255),
+            CONSTRAINT [pk_evento] PRIMARY KEY ([Id])
+        )
+    END
+
+
+	USE [eventos]
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.objects o WHERE o.object_id = object_id(N'[dbo].[fk_usuarioGrupo_usuario]'))
+    BEGIN
+        ALTER TABLE [dbo].[usuarioGrupo]
+            ADD CONSTRAINT [fk_usuarioGrupo_usuario] FOREIGN KEY ([IdUsuario])
+                REFERENCES [dbo].[usuario] ([Id]);
+    END
+
+IF NOT EXISTS (SELECT * FROM sys.objects o WHERE o.object_id = object_id(N'[dbo].[fk_usuarioGrupo_grupo]'))
+    BEGIN
+        ALTER TABLE [dbo].[usuarioGrupo]
+            ADD CONSTRAINT [fk_usuarioGrupo_grupo] FOREIGN KEY([IdGrupo])
+                REFERENCES [dbo].[grupo] ([Id]);
+    END
+
+IF NOT EXISTS (SELECT * FROM sys.objects o WHERE o.object_id = object_id(N'[dbo].[fk_evento_categoria]'))
+    BEGIN
+        ALTER TABLE [dbo].[evento]
+            ADD CONSTRAINT [fk_evento_categoria] FOREIGN KEY([IdCategoria])
+                REFERENCES [dbo].[categoria] ([Id]);
+    END
+
+IF NOT EXISTS (SELECT * FROM sys.objects o WHERE o.object_id = object_id(N'[dbo].[fk_evento_usuario]'))
+    BEGIN
+        ALTER TABLE [dbo].[evento]
+            ADD CONSTRAINT [fk_evento_usuario] FOREIGN KEY([IdOrganizador])
+                REFERENCES [dbo].[usuario] ([Id]);
+    END
+	
+
+	BEGIN TRANSACTION
+    INSERT INTO [categoria] VALUES (
+        NEWID(),
+        'Palestra',
+        GETDATE()
+    )
+
+    INSERT INTO [grupo] VALUES (
+        NEWID(),
+        'Palestrante'
+    )
+
+    INSERT INTO [usuario] VALUES (
+        NEWID(),
+        'Brewerton Santos',
+        'mail@mail.com',
+        '2022-01-20 20:00:47.093',
+        'superior - cursando',
+        '1a2b3C%'
+    )
+COMMIT
+
+SELECT
+    *
+FROM [eventos].[dbo].[categoria]
+
+SELECT TOP (1)
+    [Id]
+FROM [eventos].[dbo].[grupo]
+
+SELECT
+    [Id],
+    [NomeCompleto],
+    [Email],
+    [DataNascimento],
+    [Escolaridade],
+    [Senha]
+FROM [eventos].[dbo].[usuario]
+    WHERE [NomeCompleto] LIKE '%Brewerton%'
+
+
+
+
+SELECT
+    [usuario].[Id] AS IdUsuario,
+    [usuario].[NomeCompleto],
+    [usuario].[Email],
+    [grupo].[Id] AS IdGrupo,
+    [grupo].[Nome] AS Grupo
+FROM [usuario]
+INNER JOIN [usuarioGrupo] ON [usuarioGrupo].[IdUsuario] = [IdUsuario]
+INNER JOIN [grupo] ON [grupo].[Id] = [usuarioGrupo].[IdGrupo]
+    WHERE [NomeCompleto] LIKE '%Santos%'
